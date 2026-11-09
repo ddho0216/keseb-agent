@@ -1,0 +1,7 @@
+# 비밀값과 실행 결과는 커밋하지 않습니다. .env.example(비밀 없는 예시)만 올립니다.
+.env
+.env.*
+!.env.example
+node_modules/
+*.log
+receipts/

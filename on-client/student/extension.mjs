@@ -667,7 +667,114 @@ function aiConnectionView(input) {
   return root;
 }
 
-// 사건 설명 기초(18단계에서 근거·규칙·상태를 넓힙니다). 성공 표식 data-student-explanation-event 는 성공한 설명에만 붙입니다.
+// ---------- 18단계: 근거에 연결된 AI 사건 설명 ----------
+// 입력은 { event, explanation, checkedAt } 입니다. 이 함수는 입력만으로 화면을 그리고 이전 설명을 기억하지 않습니다.
+// 그래서 다른 기록 선택·다시 불러오기·실패가 오면 이전 설명과 성공 속성(data-student-explanation-event)은 자연히 사라집니다.
+// 성공 속성은 근거가 이 기록과 맞는 설명에만 붙입니다. 실행 버튼은 만들지 않습니다.
+const STATE_ROWS = [
+  { key: 'access', name: '접속', known: ['allowed', 'denied'] },
+  { key: 'session', name: '세션', known: ['active', 'expired', 'revoked'] },
+  { key: 'device', name: '기기', known: ['compliant', 'noncompliant'] },
+];
+
+function longText(value, max) {
+  if (!isText(value)) return '정보 없음';
+  return SECRET_LIKE.test(value) ? '[비밀로 보이는 값이라 표시하지 않음]' : value.slice(0, max);
+}
+
+// 기록의 근거를 id 로 찾습니다. id 가 겹치면 처음 것만 씁니다.
+function evidenceById(event) {
+  const map = new Map();
+  for (const item of Array.isArray(event.evidence) ? event.evidence : []) {
+    if (isObject(item) && isText(item.id) && !map.has(item.id)) map.set(item.id, item.text);
+  }
+  return map;
+}
+
+// 설명을 쓸 수 있는지 고릅니다. 쓸 수 없으면 까닭을 돌려주고, 근거 ID 를 지어내 맞추지 않습니다.
+function explanationProblem(event, data) {
+  if (!isObject(data) || !isText(data.summary) || !Array.isArray(data.evidenceIds) || !Array.isArray(data.proposals)) return '설명 형식이 맞지 않습니다.';
+  if (data.executed !== false) return '이미 실행했다고 답한 설명이라 쓸 수 없습니다.';
+  if (data.requiresHumanConfirmation !== true) return '사람 확인이 필요하다는 표시가 없는 설명이라 쓸 수 없습니다.';
+  const evidence = evidenceById(event);
+  if (evidence.size === 0) return '근거 부족: 이 기록에는 근거가 없어 AI 설명을 쓸 수 없습니다.';
+  const cited = data.evidenceIds;
+  if (cited.length === 0 || new Set(cited).size !== cited.length) return '근거 부족: 인용한 근거 ID가 없거나 겹칩니다.';
+  if (!cited.every(ref => isText(ref) && evidence.has(ref))) return '근거가 맞지 않습니다: 설명이 이 기록에 없는 근거 ID를 인용했습니다. 다른 기록의 설명일 수 있습니다.';
+  if (cited.length !== evidence.size) return '근거 부족: 설명이 이 기록의 근거를 모두 인용하지 않았습니다.';
+  const actions = Array.isArray(event.supportedActions) ? event.supportedActions : [];
+  for (const proposal of data.proposals) {
+    if (!isObject(proposal) || !isText(proposal.action) || !isText(proposal.reason) || !Array.isArray(proposal.evidenceIds)) return '제안 형식이 맞지 않습니다.';
+    if (!actions.includes(proposal.action)) return '이 기록이 지원하지 않는 조치를 제안한 설명이라 쓸 수 없습니다.';
+    if (!proposal.evidenceIds.every(ref => isText(ref) && evidence.has(ref))) return '제안이 이 기록에 없는 근거 ID를 인용해 쓸 수 없습니다.';
+  }
+  return null;
+}
+
+function explanationUnusable(event, reason) {
+  const root = make('div', undefined, 'student-explanation');
+  root.append(
+    make('p', `사건 ${safeText(event.id)} · AI 설명을 쓸 수 없음`, 'student-state'),
+    make('p', reason),
+    make('p', '기록은 그대로입니다. 설명 내용은 표시하지 않으며, 없는 근거를 지어내 맞추지 않습니다.', 'student-note'),
+  );
+  return root;
+}
+
+function explanationBody(root, event, data, input, mode) {
+  const evidence = evidenceById(event);
+  root.setAttribute('data-student-explanation-event', event.id);
+  root.append(make('p', `사건 ID: ${safeText(event.id)}`, 'student-state'), make('h4', 'AI 설명(참고용)'));
+  if (mode) root.append(mode);
+  root.append(
+    make('p', longText(data.summary, 1500)),
+    make('p', 'AI 해석입니다. 사실 판단은 아래 근거 글과 연동 시스템이 알려 준 현재 상태로 하세요.', 'student-note'),
+    make('p', `설명 시각: ${isText(input.checkedAt) ? checkedAtText(input.checkedAt) : '정보 없음'}`, 'student-note'),
+  );
+
+  root.append(make('h4', '인용한 근거'));
+  const cited = make('ul');
+  for (const ref of data.evidenceIds) cited.append(make('li', `${safeText(ref)} — ${longText(evidence.get(ref), 300)}`));
+  root.append(cited);
+
+  root.append(make('h4', '규칙'));
+  const rules = (Array.isArray(event.rules) ? event.rules : []).filter(isObject);
+  if (rules.length === 0) {
+    root.append(make('p', '없음', 'muted'));
+  } else {
+    const list = make('ul');
+    for (const rule of rules) list.append(make('li', `${isText(rule.id) ? safeText(rule.id) : '(ID 없음)'} — ${longText(rule.text, 300)}`));
+    root.append(list);
+  }
+
+  // 모르는 값은 정상·안전으로 바꾸지 않고 확인 불가와 원래 값을 함께 적습니다.
+  root.append(make('h4', '확인 불가 상태'));
+  const state = isObject(event.state) ? event.state : {};
+  const unknown = STATE_ROWS.filter(row => !(isText(state[row.key]) && row.known.includes(state[row.key])));
+  if (unknown.length === 0) {
+    root.append(make('p', '없음', 'muted'));
+  } else {
+    const list = make('ul');
+    for (const row of unknown) list.append(make('li', `${row.name}: 확인 불가(${isText(state[row.key]) ? state[row.key].slice(0, 40) : '값 없음'})`));
+    root.append(list);
+  }
+
+  root.append(make('h4', '제안'));
+  if (data.proposals.length === 0) {
+    const none = Array.isArray(event.supportedActions) && event.supportedActions.length === 0
+      ? '연동 시스템이 지원하는 조치가 없어 제안이 없습니다(정상).'
+      : 'AI가 제안한 조치가 없습니다.';
+    root.append(make('p', none));
+  } else {
+    const list = make('ul');
+    for (const proposal of data.proposals) {
+      list.append(make('li', `${safeText(proposal.action)} — ${longText(proposal.reason, 500)} (근거 ${proposal.evidenceIds.map(safeText).join(', ')}) · 사람 확인이 필요하며 실행되지 않았습니다.`));
+    }
+    root.append(list);
+  }
+  root.append(make('p', 'AI 설명은 참고 정보입니다. 설명·제안만으로 보안 조치가 실행되지는 않습니다.', 'student-note'));
+}
+
 function explanationView(input) {
   const root = make('div', undefined, 'student-explanation');
   if (!isObject(input)) {
@@ -675,7 +782,20 @@ function explanationView(input) {
     return root;
   }
   const { event, explanation } = input;
-  if (!isObject(event) || !isText(event.id)) {
+  const hasEvent = isObject(event) && isText(event.id);
+  // 실패는 기록이 없어도 먼저 보여 줍니다. 오류 없이 기록만 없을 때만 기록을 먼저 고르게 안내합니다.
+  if (isObject(explanation) && explanation.status === 'error') {
+    const error = isObject(explanation.error) ? explanation.error : {};
+    if (hasEvent) root.append(make('p', `사건 ${safeText(event.id)} · AI 설명 실패`, 'student-state'));
+    else root.append(make('p', 'AI 설명 실패', 'student-state'));
+    root.append(
+      make('p', `AI 설명 실패: ${safeText(error.code)} · ${safeText(error.message)}`),
+      make('p', '기록은 그대로입니다. AI 연결이나 응답 문제로 보안 기록이 바뀌지는 않으며, 과제 실패가 아닙니다.', 'student-note'),
+    );
+    if (!hasEvent) root.append(make('p', '보안 기록에서 기록을 먼저 고르세요.', 'student-note'));
+    return root;
+  }
+  if (!hasEvent) {
     root.append(make('p', '보안 기록에서 기록을 먼저 고르세요.'));
     return root;
   }
@@ -686,27 +806,11 @@ function explanationView(input) {
   if (explanation.status === 'idle') {
     root.append(make('p', `사건 ${safeText(event.id)} · AI 설명 전`, 'student-state'), make('p', 'AI 설명을 아직 요청하지 않았습니다. 연결 점검에 성공했어도 사건 설명이 된 것은 아닙니다.', 'student-note'));
   } else if (explanation.status === 'loading') {
-    root.append(make('p', `사건 ${safeText(event.id)} · AI 설명 요청 중`, 'student-state'));
+    root.append(make('p', `사건 ${safeText(event.id)} · AI 설명 요청 중`, 'student-state'), make('p', '결과가 올 때까지 이전 설명은 보여 주지 않습니다.', 'student-note'));
   } else if (explanation.status === 'ok') {
-    const data = explanation.data;
-    if (!isObject(data) || !isText(data.summary) || data.executed === true) {
-      root.append(make('p', `사건 ${safeText(event.id)} · AI 설명 확인 불가`, 'student-state'), make('p', '설명 형식이 맞지 않거나 이미 실행했다고 답한 설명이라 쓸 수 없습니다. 기록은 그대로입니다.'));
-    } else {
-      root.setAttribute('data-student-explanation-event', event.id);
-      root.append(
-        make('p', `사건 ID: ${safeText(event.id)}`, 'student-state'),
-        make('h4', 'AI 설명(참고용)'),
-        make('p', safeText(data.summary)),
-        make('p', 'AI 해석이며 사실 판단은 기록의 근거와 현재 상태로 합니다. 이 화면은 아무 조치도 실행하지 않습니다.', 'student-note'),
-      );
-    }
-  } else if (explanation.status === 'error') {
-    const error = isObject(explanation.error) ? explanation.error : {};
-    root.append(
-      make('p', `사건 ${safeText(event.id)} · AI 설명 실패`, 'student-state'),
-      make('p', `AI 설명 실패: ${safeText(error.code)} · ${safeText(error.message)}`),
-      make('p', '기록은 그대로입니다. AI 연결이나 응답 문제로 보안 기록이 바뀌지는 않습니다.', 'student-note'),
-    );
+    const problem = explanationProblem(event, explanation.data);
+    if (problem) return explanationUnusable(event, problem);
+    explanationBody(root, event, explanation.data, input, aiModeNote(explanation, false));
   } else {
     root.append(make('p', '확인 불가: 알 수 없는 설명 상태입니다.'));
   }

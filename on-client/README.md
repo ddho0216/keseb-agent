@@ -25,3 +25,12 @@ npm start도 같은 서버를 켭니다. 기본 실행은 실제 회사 시스�
 - 오류 코드별 해결: docs/CONNECTION_TROUBLESHOOT.md
 - 시작 틀 업데이트(내 파일 보존): docs/STARTER_UPDATE.md
 - 실제 회사 시스템(SDP)·앱 안 AI 연결은 담당자가 따로 안내할 때만 씁니다: docs/SDP_HOST_CONNECTION.md, docs/AI_SETUP_GUIDE.md. 이 연결은 앱을 처음 켜고 13~16단계 화면을 만들거나 공식 AI 코드 판정을 받기 위한 전제 조건은 아닙니다. 다만 17단계 이후의 실제 연결과 새 환경 재현은 해당 단계의 기준에 따라 따로 확인합니다.
+
+## 학생 문서 (슈크림붕어빵)
+
+위의 제공 내용은 고치지 않고, 학생이 추가한 부분만 이 아래에 적습니다.
+
+- 목적: 직원이 자기 로그인 상태, 업무 앱 접속 판정, 접속 기록과 보안 경보, 설치 패키지의 알려진 취약점 조회 결과를 한 화면에서 보는 보안 Agent입니다. AI는 근거를 설명하고 조치를 제안만 하며 실행하지 않습니다.
+- 기능과 구성: 학생이 만든 것은 student/extension.mjs의 화면 표시 함수 8개(renderIdentity·renderDecision·renderEvents·renderStatus·renderAiConnection·renderExplanation·renderAction·renderVulnerabilities)입니다. 브라우저 → 로컬 앱 서버(src/server.mjs, 127.0.0.1:5189) → 접근 제어·XDR 시스템 / AI 게이트웨이 구성은 docs/STUDENT_RUNBOOK.md의 구성도에 있습니다.
+- 확인한 환경: Windows 11 Pro, Windows PowerShell 5.1, Node.js v24.22.1(수업 기준 24.19.0은 아직 실행해 보지 않음), 예제 모드(-Demo) 실행. 실제 회사 시스템 연결과 AI 연결 성공은 확인하지 않았습니다.
+- 실행 설명서(실행·종료·재실행, 구성도, 함수와 제공 코드 경계, 오류별 확인 순서, 미확인 목록): docs/STUDENT_RUNBOOK.md

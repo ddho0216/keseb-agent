@@ -34,10 +34,10 @@ Node.js 버전이 수업 기준과 다르면 실행 도구가 시작할 때 `참
 
 ## 3. 폴더 구조
 
-Git 저장소의 최상위는 `on-client`가 아니라 그 위의 프로젝트 폴더입니다(코드 확인: `git rev-parse --show-toplevel` → `C:/Users/User/Documents/keseb-agent`).
+Git 저장소의 최상위는 `on-client`가 아니라 그 위의 프로젝트 폴더입니다(코드 확인: `git rev-parse --show-toplevel`이 `on-client`의 바로 위 폴더를 돌려줍니다). 이 문서에서 `<프로젝트 폴더>`는 그 Git 최상위 폴더를 뜻하며, PC마다 위치가 다릅니다(내 PC의 예: `Documents\keseb-agent`).
 
 ```text
-C:\Users\User\Documents\keseb-agent\          ← Git 최상위(커밋·제출은 여기 기준)
+<프로젝트 폴더>\                               ← Git 최상위(커밋·제출은 여기 기준)
 ├─ .gitignore                                  ← .env, node_modules, *.log, receipts/ 는 커밋하지 않음
 └─ on-client\                                  ← 앱 폴더(PowerShell을 여는 위치)
    ├─ README.md, package.json, .env.example    ← 제공
@@ -60,8 +60,10 @@ C:\Users\User\Documents\keseb-agent\          ← Git 최상위(커밋·제출�
 반드시 **앱 폴더 `on-client`** 에서 실행합니다. 다른 폴더(예: `C:\WINDOWS\system32`)에서 실행하면 `-File 매개 변수에 대한 인수 '.\tools\start-alekov.ps1'이(가) 없습니다` 오류가 납니다(실행 확인: 직접 겪음). 폴더 경로만 입력하는 것은 이동이 아니라 "프로그램 실행"이라서 `용어가 cmdlet, 함수, 스크립트 파일 또는 실행할 수 있는 프로그램 이름으로 인식되지 않습니다` 오류가 납니다(실행 확인: 직접 겪음). 이동은 `cd`로 합니다.
 
 ```powershell
-cd C:\Users\User\Documents\keseb-agent\on-client
+cd "<프로젝트 폴더>\on-client"
 ```
+
+`<프로젝트 폴더>`는 내 PC의 실제 경로로 바꿉니다. 내 PC에서는 `Documents` 아래의 `keseb-agent` 폴더였습니다. 경로에 공백이 있으면 따옴표로 감쌉니다.
 
 파일 탐색기에서 `on-client`를 열고 주소 표시줄에 `powershell`을 입력해 여는 방법도 있습니다(문서 근거, 직접 해 보지 않음).
 
@@ -181,7 +183,7 @@ flowchart LR
 
 | 증상·코드 | 의미 | 확인 순서 | 근거 |
 |---|---|---|---|
-| `-File 매개 변수에 대한 인수 '.\tools\start-alekov.ps1'이(가) 없습니다` | 앱 폴더가 아닌 곳에서 실행 | 1) 프롬프트의 폴더 확인 2) `cd C:\Users\User\Documents\keseb-agent\on-client` 3) 4-2 명령 다시 실행 | 실행 확인(직접 겪음) |
+| `-File 매개 변수에 대한 인수 '.\tools\start-alekov.ps1'이(가) 없습니다` | 앱 폴더가 아닌 곳에서 실행 | 1) 프롬프트의 폴더 확인 2) `cd "<프로젝트 폴더>\on-client"`(4-1) 3) 4-2 명령 다시 실행 | 실행 확인(직접 겪음) |
 | `.\tools\start-alekov.ps1`를 바로 실행했을 때 실행되지 않음 | 이 PC의 스크립트 실행 정책이 막은 것으로 봄 | `-ExecutionPolicy Bypass`를 붙인 4-2 명령 사용 | 실행 확인(직접 겪음. 정확한 오류 문구는 기록하지 않았음) |
 | `포트 5189 를 다른 프로그램이 쓰고 있습니다` | 포트 충돌 | ` -Port 5190`을 붙이고 주소도 `:5190` | 문서 근거, 미확인 |
 | `Node.js 가 없습니다` | Node.js 미설치 | Node.js 설치 후 PowerShell 새로 열기 | 문서 근거, 미확인 |
@@ -205,4 +207,33 @@ flowchart LR
 
 - 키·토큰·비밀번호는 문서, 코드, 커밋에 적지 않습니다. `.env`는 `.gitignore`로 커밋에서 빠집니다. `.env.example`에는 비밀 없는 설정(`ON_PORT=5189`, `ON_ENGINE_ADAPTER=./student/engine-adapter.mjs`, `ON_AI_MODEL=aleph/auto` 등)만 있습니다(코드 확인).
 - 이 문서의 주소는 로컬 주소(`http://127.0.0.1:5189/`)와 공개 주소(`https://api.osv.dev/v1/querybatch`, 저장소 `https://github.com/ddho0216/keseb-agent`)만 씁니다.
-- 제출: Git 최상위 폴더(`C:\Users\User\Documents\keseb-agent`)에서 커밋하고, 포털 과제 화면에 저장소 주소와 40자리 커밋을 입력합니다(21·22단계는 직접 입력, 공식 안내). 이 문서와 코드가 같은 커밋에 있어야 합니다.
+- 제출: Git 최상위 폴더(`<프로젝트 폴더>`)에서 커밋하고, 포털 과제 화면에 저장소 주소와 40자리 커밋을 입력합니다(21·22단계는 직접 입력, 공식 안내). 이 문서와 코드가 같은 커밋에 있어야 합니다.
+
+## 10. 다른 PC·새 폴더에서 옮겨 실행하기
+
+이 프로젝트는 외부 npm 패키지가 없어서 `npm install`이 필요 없습니다(코드 확인: `package.json`에 `dependencies`가 없음). 새 환경에서 필요한 것은 Node.js와 Git, 그리고 이 저장소의 파일입니다.
+
+1. **받을 커밋을 먼저 적습니다.** 저장소 URL, 브랜치, 40자리 커밋을 기록합니다. 이 값들은 `docs/STUDENT_RELEASE_RECORD.md`에 있습니다.
+2. **새 빈 폴더에 받습니다.** 기존 작업 폴더는 그대로 둡니다.
+
+```powershell
+git clone <저장소 URL> "<새 폴더>"
+cd "<새 폴더>"
+git checkout <40자리 커밋>
+```
+
+3. **런타임을 확인합니다.** `node --version`이 v22~v24인지 봅니다(수업 기준 24.19.0). 없으면 https://nodejs.org 에서 설치하고 PowerShell을 새로 엽니다.
+4. **문법을 확인합니다.** `cd "<새 폴더>\on-client"` 후 `npm run check`를 실행합니다. 오류 없이 끝나야 합니다.
+5. **실행합니다.** 4-2의 명령으로 `-Demo` 실행을 하고, 4-3의 시작 신호와 브라우저 주소를 확인합니다. 종료와 재실행은 4-4를 따릅니다.
+
+옮기지 않는 것(복사하지 않습니다): `.env`, 계정 연결 설정, 자격 보관소, 키·토큰. `.env.example`은 비밀 없는 설정 예시이며 이 저장소에 들어 있습니다. `student/`, `public/`, `src/`, README, 이 문서, `.env.example`, `package.json`에는 드라이브 문자로 시작하는 절대경로가 없고(검색 확인) 비밀값도 없습니다. 제공 실행 도구 `tools/start-alekov.ps1`만 Windows 표준 위치인 `C:\Windows\System32\WindowsPowerShell`의 PowerShell을 부릅니다(코드 확인). 이 문서의 `<프로젝트 폴더>`, `<새 폴더>`는 각 PC에서 직접 정하는 경로입니다.
+
+## 11. 데이터 보존 계획: 백업·복원·제한
+
+| 데이터 | 어디에 있나 | 백업 | 복원 | 제한 |
+|---|---|---|---|---|
+| 학생 코드·문서(`student/`, `docs/`, README) | 프로젝트 폴더의 Git 저장소 | 커밋하고 `git push`로 GitHub에 올림. 올라갔는지 `git ls-remote origin HEAD`로 커밋 번호를 비교 | 새 폴더에 `git clone` 후 `git checkout <커밋>` | 커밋하지 않은 변경과 push하지 않은 커밋은 PC를 잃으면 사라집니다. 자동 백업은 없습니다 |
+| 앱 실행 중 화면 값(`-Demo`) | 서버 메모리. 예제 엔진이 값을 메모리에서 만들며 브라우저 저장소도 쓰지 않음(코드 확인) | 필요 없음 | 다시 실행하면 같은 예제 값이 나옴 | 예제 모드는 사용자 데이터를 저장하지 않습니다 |
+| 계정 연결 설정·자격 보관소 | 프로젝트 밖의 Windows 사용자 폴더(`.aleph-keshev-…`), Windows 사용자 계정 전용 암호화(DPAPI) | 복사하지 않습니다 | 새 PC에서는 앱의 「계정 연결 확인」으로 다시 연결합니다 | 다른 PC·다른 Windows 사용자 계정에서는 복호화되지 않는 구조입니다(코드 확인). 이전·복원은 시험하지 않았습니다(미확인) |
+| 조치 기록 데이터베이스(SQLite) | 운영자가 기존 DB 경로를 지정할 때만 사용(`src/actions/store.mjs`) | 학생이 만들거나 백업하지 않음 | — | 이 프로젝트에서는 지원 조치가 없어 사용하지 않았습니다(미확인) |
+| `.env`와 키·토큰 | 커밋 대상이 아님(`.gitignore`로 제외) | 커밋·문서·캡처에 넣지 않음 | 필요하면 담당자 안내에 따라 새로 설정 | 이 문서는 값을 기록하지 않습니다 |
